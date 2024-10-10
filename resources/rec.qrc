@@ -1,0 +1,7 @@
+<RCC>
+    <qresource prefix="/">
+        <file>style/ui.qss</file>
+        <file>ui/splitter_handle_v.png</file>
+        <file>ui/splitter_handle_h.png</file>
+    </qresource>
+</RCC>

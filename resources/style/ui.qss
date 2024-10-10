@@ -1,0 +1,5 @@
+QSplitter::handle{
+    background-image:url(:/ui/splitter_handle_h.png);
+    background-repeat:no-repeat;
+    background-position:center;
+}
