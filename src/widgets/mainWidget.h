@@ -18,7 +18,6 @@
 class mainWidget : public QWidget {
     Q_OBJECT
 
-private:
     QTableWidget *preCompressionTable;
     QMap<int, QString> compressedMap;
     ImageGraphicsView *originalImage;
