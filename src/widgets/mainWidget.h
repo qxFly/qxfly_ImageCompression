@@ -10,6 +10,8 @@
 #include <QSpinBox>
 #include <QSlider>
 #include <QCheckBox>
+#include <QComboBox>
+#include <QLabel>
 #include "TableItemData.h"
 #include "ImageGraphicsView.h"
 #include "QMouseEvent"
@@ -31,10 +33,10 @@ class mainWidget : public QWidget {
     QSpinBox *webpQualitySpinBox;
     QSlider *webpQualitySlider;
     bool isOriginalDirOutput = false;
-
-    SizeModeOptions sizeMode = SizeModeOptions::PERCENTAGE;
     QSpinBox *resizeWidthSpinBox;
     QSpinBox *resizeHeightSpinBox;
+    QComboBox *fitWidthHeightComboBox;
+    QLabel *fitWidthHeightLabel;
     QCheckBox *keepOriginSizeCheckBox;
     QCheckBox *keepOriginScaleCheckBox;
 
@@ -82,6 +84,10 @@ public slots:
     void onKeepOriginSizeCheckBoxChanged(int value);
 
     void onKeepOriginScaleCheckBoxChanged(int value);
+
+    void onFitWidthHeightCheckBoxChanged(int value);
+
+    void onFitWidthHeightComboBoxChanged(int value);
 };
 
 

@@ -17,7 +17,11 @@ enum SizeModeOptions {
     PERCENTAGE = 0,
     PIXELS = 1,
 };
-
+enum SizeFitMode {
+    CLOSE = -1,
+    FIT_TO_WIDTH = 0,
+    FIT_TO_HEIGHT = 1,
+};
 typedef struct CompressionOptions {
     QString outputPath;
     QString inputPath;
@@ -28,8 +32,7 @@ typedef struct CompressionOptions {
     bool isOriginalDirOutput = false;
     bool keepOriginalSize = true;
     bool keepOriginalScale = true;
-    bool fitToWidth = false;
-    bool fitToHeight = true;
+    SizeFitMode SizeFitMode = SizeFitMode::FIT_TO_WIDTH;
     int jpegQuality;
     int pngQuality;
     int webpQuality;

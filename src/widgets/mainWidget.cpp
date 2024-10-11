@@ -223,7 +223,7 @@ mainWidget::mainWidget(QWidget *parent) : QWidget(parent) {
     connect(this->webpQualitySlider, &QSlider::valueChanged, this, &mainWidget::setWebpQuality);
     this->webpQualitySlider->setValue(50);
     this->webpQualitySpinBox->setValue(50);
-    /* 大小选项 */
+    /* 大小选项域 */
     auto *resizeHLayout1 = new QHBoxLayout();
     auto *resizeHLayout2 = new QHBoxLayout();
     auto *resizeHLayout3 = new QHBoxLayout();
@@ -234,12 +234,13 @@ mainWidget::mainWidget(QWidget *parent) : QWidget(parent) {
     compressOptionLayout->addLayout(resizeHLayout2);
     compressOptionLayout->addLayout(resizeHLayout3);
     compressOptionLayout->addLayout(resizeHLayout4);
+    /* 调整大小 */
     auto *resizeLabel = new QLabel("调整大小");
     auto *sizeComboBox = new QComboBox();
     sizeComboBox->setFixedWidth(80);
     sizeComboBox->addItem("百分比", 0);
     sizeComboBox->addItem("像素", 1);
-
+    /* 宽 */
     auto *resizeWidthLabel = new QLabel("宽:");
     resizeWidthLabel->setFixedWidth(20);
     this->resizeWidthSpinBox = new QSpinBox();
@@ -247,6 +248,7 @@ mainWidget::mainWidget(QWidget *parent) : QWidget(parent) {
     this->resizeWidthSpinBox->setMaximum(100);
     this->resizeWidthSpinBox->setMinimum(1);
     this->resizeWidthSpinBox->setFixedWidth(100);
+    /* 高 */
     auto *resizeHeightLabel = new QLabel("高:");
     resizeHeightLabel->setFixedWidth(20);
     this->resizeHeightSpinBox = new QSpinBox();
@@ -254,6 +256,16 @@ mainWidget::mainWidget(QWidget *parent) : QWidget(parent) {
     this->resizeHeightSpinBox->setMaximum(100);
     this->resizeHeightSpinBox->setMinimum(1);
     this->resizeHeightSpinBox->setFixedWidth(100);
+    /* 适应宽或高 */
+    this->fitWidthHeightLabel = new QLabel("适应宽或高");
+    this->fitWidthHeightLabel->setFixedWidth(100);
+    this->fitWidthHeightComboBox = new QComboBox();
+    this->fitWidthHeightComboBox->addItem("适应宽", 0);
+    this->fitWidthHeightComboBox->addItem("适应高", 1);
+    this->fitWidthHeightComboBox->setEnabled(false);
+    this->compressionOptions.SizeFitMode = SizeFitMode::FIT_TO_WIDTH;
+    connect(this->fitWidthHeightComboBox, &QComboBox::currentIndexChanged, this, &mainWidget::onFitWidthHeightComboBoxChanged);
+    /* 保持原大小 */
     this->keepOriginSizeCheckBox = new QCheckBox("保持原大小");
     this->keepOriginScaleCheckBox = new QCheckBox("保持宽高比");
 
@@ -264,9 +276,11 @@ mainWidget::mainWidget(QWidget *parent) : QWidget(parent) {
     resizeHLayout1->addWidget(sizeComboBox);
     resizeHLayout2->addWidget(resizeWidthLabel);
     resizeHLayout2->addWidget(this->resizeWidthSpinBox);
-    resizeHLayout2->addWidget(this->keepOriginSizeCheckBox);
+    resizeHLayout2->addWidget(fitWidthHeightLabel);
+    resizeHLayout2->addWidget(this->fitWidthHeightComboBox);
     resizeHLayout3->addWidget(resizeHeightLabel);
     resizeHLayout3->addWidget(this->resizeHeightSpinBox);
+    resizeHLayout3->addWidget(this->keepOriginSizeCheckBox);
     resizeHLayout3->addWidget(this->keepOriginScaleCheckBox);
     resizeHLayout4->addWidget(resizeLabelLine);
     connect(sizeComboBox, &QComboBox::currentIndexChanged, this, &mainWidget::onSizeComboBoxChanged);
@@ -291,14 +305,15 @@ mainWidget::mainWidget(QWidget *parent) : QWidget(parent) {
     auto *outPathLabel = new QLabel("输出路径：", outputOptWidget);
     auto *getOutPathBtn = new QPushButton("选择", outputOptWidget);
     auto *outPathLineEdit = new QLineEdit(this->compressionOptions.outputPath, outputOptWidget);
-    /* 读取上一次路径 */
-    QSettings settings("config.ini", QSettings::IniFormat);
-    outPathLineEdit->setText(settings.value("lastOutputPath", QDir::currentPath()).toString());
     connect(getOutPathBtn, &QPushButton::clicked, [=]() {
         this->compressionOptions.outputPath = QFileDialog::getExistingDirectory(outputOptWidget, "选择输出路径", QDir::currentPath());
         outPathLineEdit->setText(this->compressionOptions.outputPath);
     });
     connect(outPathLineEdit, &QLineEdit::textChanged, [=](const QString &text) { this->compressionOptions.outputPath = text; });
+    /* 读取上一次路径 */
+    QSettings settings("config.ini", QSettings::IniFormat);
+    outPathLineEdit->setText(settings.value("lastOutputPath", QDir::currentPath()).toString());
+
     outPathHLayout1->addWidget(outPathLabel);
     outPathHLayout2->addWidget(getOutPathBtn);
     outPathHLayout2->addWidget(outPathLineEdit);
@@ -530,8 +545,8 @@ void mainWidget::onCompressFinished() {
 
 void mainWidget::onSizeComboBoxChanged(int index) {
     if (index == 0) {
-        sizeMode = SizeModeOptions::PERCENTAGE;
         this->compressionOptions.sizeMode = SizeModeOptions::PERCENTAGE;
+        this->compressionOptions.SizeFitMode = SizeFitMode::CLOSE;
         this->resizeHeightSpinBox->setSuffix("%");
         this->resizeHeightSpinBox->setMaximum(100);
         this->resizeHeightSpinBox->setMinimum(1);
@@ -540,8 +555,8 @@ void mainWidget::onSizeComboBoxChanged(int index) {
         this->resizeWidthSpinBox->setMaximum(100);
         this->resizeWidthSpinBox->setMinimum(1);
         this->resizeWidthSpinBox->setValue(100);
+        this->fitWidthHeightComboBox->setEnabled(false);
     } else if (index == 1) {
-        sizeMode = SizeModeOptions::PIXELS;
         this->compressionOptions.sizeMode = SizeModeOptions::PIXELS;
         this->resizeHeightSpinBox->setSuffix("px");
         this->resizeHeightSpinBox->setMaximum(99999);
@@ -551,34 +566,81 @@ void mainWidget::onSizeComboBoxChanged(int index) {
         this->resizeWidthSpinBox->setMaximum(99999);
         this->resizeWidthSpinBox->setMinimum(1);
         this->resizeWidthSpinBox->setValue(1000);
+
+        if (!this->keepOriginSizeCheckBox->isChecked() && this->keepOriginScaleCheckBox->isChecked()) {
+            this->fitWidthHeightComboBox->setEnabled(true);
+            this->fitWidthHeightComboBox->currentIndex() == 0
+                ? this->compressionOptions.SizeFitMode = SizeFitMode::FIT_TO_WIDTH
+                : this->compressionOptions.SizeFitMode = SizeFitMode::FIT_TO_HEIGHT;
+        }
     }
 }
 
 void mainWidget::onResizeWidthSpinBoxChanged(int value) {
-    if (this->keepOriginScaleCheckBox->isChecked())
+    if (this->keepOriginScaleCheckBox->isChecked() && this->compressionOptions.sizeMode == SizeModeOptions::PERCENTAGE)
         this->resizeHeightSpinBox->setValue(value);
     this->compressionOptions.width = value;
 }
 
 void mainWidget::onResizeHeightSpinBoxChanged(int value) {
-    if (this->keepOriginScaleCheckBox->isChecked())
+    if (this->keepOriginScaleCheckBox->isChecked() && this->compressionOptions.sizeMode == SizeModeOptions::PERCENTAGE)
         this->resizeWidthSpinBox->setValue(value);
     this->compressionOptions.height = value;
 }
 
 void mainWidget::onKeepOriginSizeCheckBoxChanged(int value) {
     if (value == 0) {
-        compressionOptions.keepOriginalSize = false;
+        this->compressionOptions.keepOriginalSize = false;
         this->resizeHeightSpinBox->setEnabled(true);
         this->resizeWidthSpinBox->setEnabled(true);
+        this->keepOriginScaleCheckBox->setEnabled(true);
+
+        if (this->compressionOptions.sizeMode == SizeModeOptions::PIXELS && this->keepOriginScaleCheckBox->isChecked()) {
+            this->fitWidthHeightComboBox->setEnabled(true);
+        }
     } else {
-        compressionOptions.keepOriginalSize = true;
+        this->compressionOptions.keepOriginalSize = true;
         this->resizeHeightSpinBox->setEnabled(false);
         this->resizeWidthSpinBox->setEnabled(false);
+        this->keepOriginScaleCheckBox->setEnabled(false);
+        if (this->fitWidthHeightComboBox->isEnabled()) {
+            this->fitWidthHeightComboBox->setEnabled(false);
+        }
     }
 }
 
 void mainWidget::onKeepOriginScaleCheckBoxChanged(int value) {
-    compressionOptions.keepOriginalScale = value != 0;
-    this->resizeWidthSpinBox->setValue(this->resizeHeightSpinBox->value());
+    if (value == 0) {
+        this->compressionOptions.keepOriginalScale = false;
+        this->fitWidthHeightComboBox->setEnabled(false);
+    } else {
+        this->compressionOptions.keepOriginalScale = true;
+        if (this->compressionOptions.sizeMode == SizeModeOptions::PIXELS) {
+            this->fitWidthHeightComboBox->setEnabled(true);
+        }
+    }
+    if (this->compressionOptions.sizeMode == SizeModeOptions::PERCENTAGE)
+        this->resizeWidthSpinBox->setValue(this->resizeHeightSpinBox->value());
+}
+
+void mainWidget::onFitWidthHeightCheckBoxChanged(int value) {
+    if (value == 0) {
+        this->fitWidthHeightComboBox->setEnabled(false);
+        this->compressionOptions.SizeFitMode = SizeFitMode::CLOSE;
+    } else {
+        this->fitWidthHeightComboBox->setEnabled(true);
+        this->fitWidthHeightComboBox->currentIndex() == 0 ? this->compressionOptions.SizeFitMode = SizeFitMode::FIT_TO_WIDTH : this->compressionOptions.SizeFitMode = SizeFitMode::FIT_TO_HEIGHT;
+    }
+}
+
+void mainWidget::onFitWidthHeightComboBoxChanged(int value) {
+    qout << value;
+
+    if (value == 0) {
+        this->compressionOptions.SizeFitMode = SizeFitMode::FIT_TO_WIDTH;
+    } else if (value == 1) {
+        this->compressionOptions.SizeFitMode = SizeFitMode::FIT_TO_HEIGHT;
+    } else {
+        this->compressionOptions.SizeFitMode = SizeFitMode::CLOSE;
+    }
 }

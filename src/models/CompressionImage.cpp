@@ -47,9 +47,9 @@ QFuture<void> CompressionImage::compress1(int index) const {
                 double scale = static_cast<double>(img.rows) / img.cols;
                 /* 判断是否保持原比例 */
                 if (this->compressionOptions.keepOriginalScale) {
-                    if (this->compressionOptions.fitToWidth) {
+                    if (this->compressionOptions.SizeFitMode == SizeFitMode::FIT_TO_WIDTH) {
                         height = width * scale;
-                    } else if (this->compressionOptions.fitToHeight) {
+                    } else if (this->compressionOptions.SizeFitMode == SizeFitMode::FIT_TO_HEIGHT) {
                         width = height / scale;
                     }
                 }
