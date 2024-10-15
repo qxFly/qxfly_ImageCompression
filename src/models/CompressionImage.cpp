@@ -8,6 +8,10 @@
 #include <opencv2/opencv.hpp>
 #include <QtConcurrent>
 #include <QFuture>
+#include <QLabel>
+#include <QTableWidget>
+#include <QTextDocument>
+#include <QTextCursor>
 
 CompressionImage::CompressionImage(QAbstractItemModel *tableModel, CompressionOptions &compressionOptions) {
     this->tableModel = tableModel;
@@ -26,7 +30,7 @@ int CompressionImage::compress() {
     return 1;
 }
 
-QFuture<void> CompressionImage::compress1(int index) const {
+QFuture<void> CompressionImage::compress1(int index) {
     return QtConcurrent::run([=]() {
         QString path = this->tableModel->index(index, 3).data().toString();
         QString fileName = this->tableModel->index(index, 0).data().toString();
@@ -76,10 +80,13 @@ QFuture<void> CompressionImage::compress1(int index) const {
         }
 
         /* 输出 */
-        this->tableModel->setData(this->tableModel->index(index, 4), "压缩中");
+        auto *parent = dynamic_cast<QTableWidget *>(this->tableModel->parent());
+        parent->item(index,0)->setIcon(QIcon(":/ui/icon/compressing.svg"));
         QString outputFullPath = outputPath + "/" + fileName;
-        cv::imwrite(outputFullPath.toStdString(), img, compression_params);
-        this->tableModel->setData(this->tableModel->index(index, 4), "已压缩");
-        this->tableModel->setData(this->tableModel->index(index, 5), outputFullPath);
+        this->tableModel->setData(this->tableModel->index(index, 5), "压缩中");
+        cv::imwrite(outputFullPath.toLocal8Bit().toStdString(), img, compression_params);
+        this->tableModel->setData(this->tableModel->index(index, 5), "压缩完成");
+        parent->item(index,0)->setIcon(QIcon(":/ui/icon/compressed.svg"));
+        this->tableModel->setData(this->tableModel->index(index, 4), outputFullPath);
     });
 }

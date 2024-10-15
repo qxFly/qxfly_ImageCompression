@@ -3,7 +3,6 @@
 #include <QPushButton>
 #include <windows.h>
 #include "mainWidget.h"
-#include <QStyleFactory>
 int main(int argc, char *argv[]) {
     QApplication a(argc, argv);
 //    HDC screen_dc = GetDC(nullptr);
@@ -14,7 +13,9 @@ int main(int argc, char *argv[]) {
 //    ReleaseDC(nullptr, screen_dc);
     mainWidget mainWidget;
 //    mainWidget.resize(width / 1.5, height / 1.5);
-    mainWidget.setWindowTitle("qxfly");
+    mainWidget.setWindowTitle("qxfly-ImageCompression");
+    QIcon icon(":/ui/icon/logo.png");
+    mainWidget.setWindowIcon(icon);
     mainWidget.show();
     return QApplication::exec();
 }

@@ -5,11 +5,10 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
-
+#设置CMAKE前缀路径
 set(CMAKE_PREFIX_PATH "F:/Code_Software/Qt/6.6.3/mingw_64/lib/cmake")
 #设置OpenCV库路径
 set(OpenCV_DIR "F:/Code_Software/OpenCV/build_mingw/x64/mingw/lib")
-
 #查找OpenCV库
 find_package(OpenCV REQUIRED)
 
@@ -29,14 +28,13 @@ include_directories(
         src/widgets
         src/models
         src/utils
-        F:/Code_Software/OpenCV/build_mingw/include
+        ${OpenCV_INCLUDE_DIRS}# OpenCV_INCLUDE_DIRS 是预定义变量，代表OpenCV库的头文件路径
 )
 #链接动态库
-link_libraries(
-        F:/Code_Software/OpenCV/build_mingw/x64/mingw/lib/libopencv_world4100.dll.a
-)
+link_libraries()
 #可执行文件
 add_executable(qxfly_ImageCompression
+#        WIN32
         main.cpp
         src/widgets/mainWidget.cpp
         src/widgets/ImageGraphicsView.cpp
@@ -53,8 +51,8 @@ target_link_libraries(qxfly_ImageCompression
         Qt::Widgets
         Qt::Network
         Qt::Concurrent
+        ${OpenCV_LIBS}# OpenCV_LIBS 是预定义变量，代表OpenCV库的lib库文件
 )
-
 if (WIN32 AND NOT DEFINED CMAKE_TOOLCHAIN_FILE)
     set(DEBUG_SUFFIX)
     if (MSVC AND CMAKE_BUILD_TYPE MATCHES "Debug")

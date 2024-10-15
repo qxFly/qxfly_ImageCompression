@@ -19,7 +19,7 @@ private:
     CompressionOptions compressionOptions;
     QVector<CompressionOptions *> tableItemDataList;
 
-    QFuture<void> compress1(int index) const;
+    QFuture<void> compress1(int index);
 
 public:
     CompressionImage(QAbstractItemModel *tableModel, CompressionOptions &compressionOptions);

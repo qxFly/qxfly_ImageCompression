@@ -49,10 +49,12 @@ public:
 
     static void initTableFromFile(QTableWidget *table, const QString &path);
 
-
     void resizeEvent(QResizeEvent *event) override;
 
     void contextMenuEvent(QContextMenuEvent *event) override;
+
+private:
+    void initTable(QWidget *parent);
 
 public slots:
     void setTableContextMenu(QPoint pos);
@@ -63,7 +65,9 @@ public slots:
 
     void setTableDoubleClick(int row, int col);
 
-    void compressImage();
+    void onCompressBtnClick();
+
+    void onClearTableBtnClick();
 
     void splitterMoved();
 

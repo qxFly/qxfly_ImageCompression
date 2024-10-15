@@ -3,5 +3,11 @@
         <file>style/ui.qss</file>
         <file>ui/splitter_handle_v.png</file>
         <file>ui/splitter_handle_h.png</file>
+        <file>ui/icon/compressed.svg</file>
+        <file>ui/icon/compressing.svg</file>
+        <file>ui/icon/error.svg</file>
+        <file>ui/icon/uncompressed.svg</file>
+        <file>ui/icon/warning.svg</file>
+        <file>ui/icon/logo.png</file>
     </qresource>
 </RCC>

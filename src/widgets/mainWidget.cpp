@@ -3,7 +3,6 @@
 //
 
 #define qout qDebug() << __FILE__ << " " << __LINE__ << " "
-
 #include <QHeaderView>
 #include <QSplitter>
 #include <QFileDialog>
@@ -42,6 +41,7 @@ mainWidget::mainWidget(QWidget *parent) : QWidget(parent) {
     /*引入qrc*/
     QFile styleFile(":/style/ui.qss");
     styleFile.open(QFile::ReadOnly);
+    QString style(styleFile.readAll());
     /*设置窗口背景色*/
     QPalette qPalette = this->palette();
     qPalette.setColor(this->backgroundRole(), Qt::white);
@@ -85,56 +85,43 @@ mainWidget::mainWidget(QWidget *parent) : QWidget(parent) {
      */
     auto *mainSplitter = new QSplitter(Qt::Vertical, this);
     mainSplitter->setChildrenCollapsible(false);
-    mainSplitter->setStyleSheet(styleFile.readAll());
+    mainSplitter->setStyleSheet(style);
     vbox->addWidget(mainSplitter);
     connect(mainSplitter, &QSplitter::splitterMoved, this, &mainWidget::splitterMoved);
     /**
      * 第一个分割窗
      */
     auto *firstSpl = new QSplitter(Qt::Horizontal, mainSplitter);
+    mainSplitter->addWidget(firstSpl);
+    auto *firstSplVbox = new QVBoxLayout(firstSpl);
+    firstSpl->setLayout(firstSplVbox);
     firstSpl->setChildrenCollapsible(false);
     firstSpl->setMinimumHeight(this->height() / 3);
+
     firstSpl->setStyleSheet("QSplitter::handle{background-image:url(:/ui/splitter_handle_v.png);}");
-    this->preCompressionTable = new QTableWidget(firstSpl);
-    this->preCompressionTable->setMinimumWidth(this->width() / 3);
-    this->preCompressionTable->setColumnCount(6);
-    this->preCompressionTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Interactive);
-    this->preCompressionTable->horizontalHeader()->setStretchLastSection(true);
-    this->preCompressionTable->horizontalHeader()->setMinimumSectionSize(50);
-    this->preCompressionTable->setColumnWidth(0, 150);
-    this->preCompressionTable->setColumnWidth(1, 100);
-    this->preCompressionTable->setColumnWidth(3, 200);
-    this->preCompressionTable->setHorizontalHeaderLabels(QStringList() << "文件名" << "大小" << "分辨率" << "路径" << "压缩状态" << "保存路径");
-    this->preCompressionTable->setContextMenuPolicy(Qt::CustomContextMenu); //右键菜单
-    this->preCompressionTable->setEditTriggers(QAbstractItemView::NoEditTriggers); //禁止编辑
-    this->preCompressionTable->horizontalHeader()->setSortIndicatorShown(true);
-    this->preCompressionTable->setSelectionBehavior(QAbstractItemView::SelectRows);
-    /*初始化点击表头排序*/
-    int c = this->preCompressionTable->columnCount();
-    this->sortOrder = new Qt::SortOrder[c];
-    for (int i = 0; i < c; i++) {
-        this->sortOrder[i] = Qt::AscendingOrder;
-    }
-    /*选中行时展示预览图*/
-    connect(this->preCompressionTable, &QTableWidget::cellClicked, this, &mainWidget::setPreviewImage);
-    /*表格右键菜单*/
-    connect(this->preCompressionTable, &QTableWidget::customContextMenuRequested, this, &mainWidget::setTableContextMenu);
-    /*双击打开文件*/
-    connect(this->preCompressionTable, &QTableWidget::cellDoubleClicked, this, &mainWidget::setTableDoubleClick);
-    /*表头点击排序*/
-    connect(this->preCompressionTable->horizontalHeader(), &QHeaderView::sectionClicked, this, &mainWidget::setHeaderClickSort);
+    initTable(firstSpl);
+    firstSpl->setStretchFactor(0, 2);
+    firstSpl->setStretchFactor(1, 1);
+    firstSplVbox->addWidget(this->preCompressionTable);
 
     /**
      * 压缩选项窗
      */
     auto *firstSpl_secFrame = new QFrame(firstSpl);
     firstSpl_secFrame->setMinimumWidth(this->width() / 3);
+
+    firstSplVbox->addWidget(firstSpl_secFrame);
     auto *firstSpl_secFrame_layout = new QGridLayout(firstSpl_secFrame);
     firstSpl_secFrame_layout->setContentsMargins(0, 0, 0, 0);
     auto *tabWidget = new QTabWidget();
     /* 压缩选项页 */
     auto *compressionOptWidget = new QWidget(tabWidget);
     auto *compressOptionLayout = new QVBoxLayout(compressionOptWidget);
+    tabWidget->addTab(compressionOptWidget, "压缩选项");
+
+    compressionOptWidget->setLayout(compressOptionLayout);
+    firstSpl_secFrame->setLayout(firstSpl_secFrame_layout);
+    firstSpl_secFrame_layout->addWidget(tabWidget, 0, 0);
 
     /* png 质量*/
     auto *pngQualityHLayout1 = new QHBoxLayout();
@@ -200,7 +187,7 @@ mainWidget::mainWidget(QWidget *parent) : QWidget(parent) {
     compressOptionLayout->addLayout(webpQualityHLayout1);
     compressOptionLayout->addLayout(webpQualityHLayout2);
     compressOptionLayout->addLayout(webpQualityHLayout3);
-    auto *webpQualityLabel = new QLabel("webp质量");
+    auto *webpQualityLabel = new QLabel("Webp质量");
     webpQualityLabel->setSizePolicy(QSizePolicy::Maximum, QSizePolicy::Minimum);
     auto *webpQualityLabelLine = new QFrame();
     webpQualityLabelLine->setFrameShape(QFrame::HLine);
@@ -258,7 +245,7 @@ mainWidget::mainWidget(QWidget *parent) : QWidget(parent) {
     this->resizeHeightSpinBox->setFixedWidth(100);
     /* 适应宽或高 */
     this->fitWidthHeightLabel = new QLabel("适应宽或高");
-    this->fitWidthHeightLabel->setFixedWidth(100);
+    this->fitWidthHeightLabel->setFixedWidth(65);
     this->fitWidthHeightComboBox = new QComboBox();
     this->fitWidthHeightComboBox->addItem("适应宽", 0);
     this->fitWidthHeightComboBox->addItem("适应高", 1);
@@ -298,12 +285,15 @@ mainWidget::mainWidget(QWidget *parent) : QWidget(parent) {
     auto *outputOptWidget = new QWidget(tabWidget);
     auto *outputOptLayout = new QVBoxLayout(outputOptWidget);
     outputOptWidget->setLayout(outputOptLayout);
+    tabWidget->addTab(outputOptWidget, "输出路径");
     auto *outPathHLayout1 = new QHBoxLayout();
     auto *outPathHLayout2 = new QHBoxLayout();
     outputOptLayout->addLayout(outPathHLayout1);
     outputOptLayout->addLayout(outPathHLayout2);
     auto *outPathLabel = new QLabel("输出路径：", outputOptWidget);
     auto *getOutPathBtn = new QPushButton("选择", outputOptWidget);
+    auto *isOriginalDirOutputCheckBox = new QCheckBox("原文件夹输出", outputOptWidget);
+
     auto *outPathLineEdit = new QLineEdit(this->compressionOptions.outputPath, outputOptWidget);
     connect(getOutPathBtn, &QPushButton::clicked, [=]() {
         this->compressionOptions.outputPath = QFileDialog::getExistingDirectory(outputOptWidget, "选择输出路径", QDir::currentPath());
@@ -317,6 +307,7 @@ mainWidget::mainWidget(QWidget *parent) : QWidget(parent) {
     outPathHLayout1->addWidget(outPathLabel);
     outPathHLayout2->addWidget(getOutPathBtn);
     outPathHLayout2->addWidget(outPathLineEdit);
+    outputOptLayout->addWidget(isOriginalDirOutputCheckBox);
     outputOptLayout->addStretch();
     /* 压缩按钮组 */
     auto *compressBtnWidget = new QWidget();
@@ -324,12 +315,17 @@ mainWidget::mainWidget(QWidget *parent) : QWidget(parent) {
     btnHLayout->setContentsMargins(0, 0, 2, 0);
     compressBtnWidget->setLayout(btnHLayout);
     compressBtnWidget->setMinimumHeight(22);
-    auto *btn = new QPushButton("压缩", compressBtnWidget);
-    auto *isOriginalDirOutputCheckBox = new QCheckBox("原文件夹输出", outputOptWidget);
+    firstSpl_secFrame_layout->addWidget(compressBtnWidget, 1, 0);
+
+
+    auto *clearTableBtn = new QPushButton("清空表格", compressBtnWidget);
+    auto *compressBtn = new QPushButton("压缩", compressBtnWidget);
+
+    btnHLayout->addWidget(clearTableBtn);
     btnHLayout->addStretch();
-    btnHLayout->addWidget(isOriginalDirOutputCheckBox);
-    btnHLayout->addWidget(btn);
-    connect(btn, &QPushButton::clicked, this, &mainWidget::compressImage);
+    btnHLayout->addWidget(compressBtn);
+    connect(compressBtn, &QPushButton::clicked, this, &mainWidget::onCompressBtnClick);
+    connect(clearTableBtn, &QPushButton::clicked, this, &mainWidget::onClearTableBtnClick);
     connect(isOriginalDirOutputCheckBox, &QCheckBox::stateChanged, [=](int state) {
         if (state == Qt::Checked) {
             this->compressionOptions.isOriginalDirOutput = true;
@@ -342,6 +338,7 @@ mainWidget::mainWidget(QWidget *parent) : QWidget(parent) {
      * 第二个分割窗
      */
     auto *secondSpl = new QSplitter(Qt::Horizontal, mainSplitter);
+    mainSplitter->addWidget(secondSpl);
     secondSpl->setChildrenCollapsible(false);
     secondSpl->setMinimumHeight(this->height() / 3);
     secondSpl->setStyleSheet("QSplitter::handle{background-image:url(:/ui/splitter_handle_v.png);}");
@@ -369,20 +366,41 @@ mainWidget::mainWidget(QWidget *parent) : QWidget(parent) {
     connect(this->compressedImage->verticalScrollBar(), &QAbstractSlider::valueChanged, this->originalImage, &ImageGraphicsView::setVScrollBarValue);
     connect(this->compressedImage->horizontalScrollBar(), &QAbstractSlider::valueChanged, this->originalImage, &ImageGraphicsView::setHScrollBarValue);
     initTableFromFile(this->preCompressionTable, R"(G:\Desktop\opencv-test\input)");
-
-    firstSpl->addWidget(this->preCompressionTable);
-    firstSpl->addWidget(firstSpl_secFrame);
-    tabWidget->addTab(compressionOptWidget, "压缩选项");
-    tabWidget->addTab(outputOptWidget, "输出路径");
-    compressionOptWidget->setLayout(compressOptionLayout);
-    firstSpl_secFrame->setLayout(firstSpl_secFrame_layout);
-    firstSpl_secFrame_layout->addWidget(tabWidget, 0, 0);
-    firstSpl_secFrame_layout->addWidget(compressBtnWidget, 1, 0);
-
     secondSpl->addWidget(this->originalImage);
     secondSpl->addWidget(this->compressedImage);
+    this->preCompressionTable->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 }
 
+void mainWidget::initTable(QWidget *parent) {
+    this->preCompressionTable = new QTableWidget(parent);
+    this->preCompressionTable->setMinimumWidth(this->width() / 3);
+    this->preCompressionTable->setColumnCount(6);
+    this->preCompressionTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Interactive);
+    this->preCompressionTable->horizontalHeader()->setStretchLastSection(true);
+    this->preCompressionTable->horizontalHeader()->setMinimumSectionSize(50);
+    this->preCompressionTable->setColumnWidth(0, 150);
+    this->preCompressionTable->setColumnWidth(1, 100);
+    this->preCompressionTable->setColumnWidth(3, 250);
+    this->preCompressionTable->setHorizontalHeaderLabels(QStringList() << "文件名" << "分辨率" << "大小" << "路径" << "保存路径" << "状态");
+    this->preCompressionTable->setContextMenuPolicy(Qt::CustomContextMenu); //右键菜单
+    this->preCompressionTable->setEditTriggers(QAbstractItemView::NoEditTriggers); //禁止编辑
+    this->preCompressionTable->horizontalHeader()->setSortIndicatorShown(true);
+    this->preCompressionTable->setSelectionBehavior(QAbstractItemView::SelectRows);
+    /*初始化点击表头排序*/
+    int c = this->preCompressionTable->columnCount();
+    this->sortOrder = new Qt::SortOrder[c];
+    for (int i = 0; i < c; i++) {
+        this->sortOrder[i] = Qt::AscendingOrder;
+    }
+    /*选中行时展示预览图*/
+    connect(this->preCompressionTable, &QTableWidget::cellClicked, this, &mainWidget::setPreviewImage);
+    /*表格右键菜单*/
+    connect(this->preCompressionTable, &QTableWidget::customContextMenuRequested, this, &mainWidget::setTableContextMenu);
+    /*双击打开文件*/
+    connect(this->preCompressionTable, &QTableWidget::cellDoubleClicked, this, &mainWidget::setTableDoubleClick);
+    /*表头点击排序*/
+    connect(this->preCompressionTable->horizontalHeader(), &QHeaderView::sectionClicked, this, &mainWidget::setHeaderClickSort);
+}
 
 void mainWidget::initTableFromFile(QTableWidget *table, const QString &path) {
     QFileInfo file(path);
@@ -410,12 +428,16 @@ void mainWidget::initTableFromFile(QTableWidget *table, const QString &path) {
 
 int mainWidget::addRow(QTableWidget *table, int row, const TableItemData &data) {
     double size = static_cast<double>(data.getSize()) / 1024.0 / 1024.0;
-    QStringList rowData = QStringList() << data.getName() << QString::asprintf("%.4f MB", size) << data.getResolution() << data.getPath() << "未压缩" << nullptr;
+    QStringList rowData = QStringList() << data.getName() << data.getResolution() << QString::asprintf("%.4f MB", size) << data.getPath() << nullptr << "未压缩";
     while (table->rowCount() - 1 < row) {
         table->insertRow(row);
     }
     for (int i = 0; i < table->columnCount(); i++) {
         auto *item = new QTableWidgetItem(rowData.at(i));
+        if (i == 0) {
+            QIcon icon(":ui/icon/uncompressed.svg");
+            item->setIcon(icon);
+        }
         table->setItem(row, i, item);
     }
     return row;
@@ -486,7 +508,7 @@ void mainWidget::setPreviewImage(int row, int col) {
     QPixmap img = QPixmap::fromImageReader(imageReader);
     this->originalImage->showPixmap(img);
     /*压缩后预览图像*/
-    QTableWidgetItem *item = this->preCompressionTable->item(row, 5);
+    QTableWidgetItem *item = this->preCompressionTable->item(row, 4);
     if (item == nullptr || item->text().isEmpty() || item->text().isNull() || item->text() == "") {
         QPixmap img1;
         this->compressedImage->showPixmap(img1);
@@ -504,7 +526,7 @@ void mainWidget::setTableDoubleClick(int row, int col) {
     QDesktopServices::openUrl(QUrl::fromLocalFile(path));
 }
 
-void mainWidget::compressImage() {
+void mainWidget::onCompressBtnClick() {
     if (this->compressionOptions.outputPath.isEmpty() || this->compressionOptions.outputPath.isNull() || this->compressionOptions.outputPath == "") {
         QMessageBox::critical(this, "Error", "请选择输出路径！");
         return;
@@ -514,6 +536,11 @@ void mainWidget::compressImage() {
     QAbstractItemModel *model = this->preCompressionTable->model();
     auto *compressionImage = new CompressionImage(model, this->compressionOptions);
     compressionImage->compress();
+}
+
+void mainWidget::onClearTableBtnClick() {
+    this->preCompressionTable->clearContents();
+    this->preCompressionTable->setRowCount(0);
 }
 
 void mainWidget::splitterMoved() {
